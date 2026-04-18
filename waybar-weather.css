@@ -1,0 +1,335 @@
+/* Static weather icon mapping */
+
+#custom-weather {
+  background-position: 10px center;
+  background-repeat: no-repeat;
+  background-size: 25px 25px;
+  padding-left: 40px;
+  padding-right: 10px;
+}
+
+#custom-weather.weather-missing-icon,
+#custom-weather.weather-error {
+  background-image: none;
+  padding-left: 10px;
+}
+
+#custom-weather.weather-clear.weather-theme-light.weather-day {
+  background-image: url("./icons/light/sunny.svg");
+}
+
+#custom-weather.weather-clear.weather-theme-light.weather-night {
+  background-image: url("./icons/light/clear_night.svg");
+}
+
+#custom-weather.weather-mostly_clear.weather-theme-light.weather-day {
+  background-image: url("./icons/light/mostly_sunny.svg");
+}
+
+#custom-weather.weather-mostly_clear.weather-theme-light.weather-night {
+  background-image: url("./icons/light/mostly_clear_night.svg");
+}
+
+#custom-weather.weather-partly_cloudy.weather-theme-light.weather-day {
+  background-image: url("./icons/light/partly_cloudy.svg");
+}
+
+#custom-weather.weather-partly_cloudy.weather-theme-light.weather-night {
+  background-image: url("./icons/light/partly_cloudy_night.svg");
+}
+
+#custom-weather.weather-cloudy.weather-theme-light.weather-day {
+  background-image: url("./icons/light/cloudy.svg");
+}
+
+#custom-weather.weather-cloudy.weather-theme-light.weather-night {
+  background-image: url("./icons/light/cloudy.svg");
+}
+
+#custom-weather.weather-fog.weather-theme-light.weather-day {
+  background-image: url("./icons/light/cloudy.svg");
+}
+
+#custom-weather.weather-fog.weather-theme-light.weather-night {
+  background-image: url("./icons/light/cloudy.svg");
+}
+
+#custom-weather.weather-drizzle.weather-theme-light.weather-day {
+  background-image: url("./icons/light/drizzle.svg");
+}
+
+#custom-weather.weather-drizzle.weather-theme-light.weather-night {
+  background-image: url("./icons/light/drizzle.svg");
+}
+
+#custom-weather.weather-light_rain.weather-theme-light.weather-day {
+  background-image: url("./icons/light/drizzle.svg");
+}
+
+#custom-weather.weather-light_rain.weather-theme-light.weather-night {
+  background-image: url("./icons/light/drizzle.svg");
+}
+
+#custom-weather.weather-rain.weather-theme-light.weather-day {
+  background-image: url("./icons/light/heavy_rain.svg");
+}
+
+#custom-weather.weather-rain.weather-theme-light.weather-night {
+  background-image: url("./icons/light/heavy_rain.svg");
+}
+
+#custom-weather.weather-heavy_rain.weather-theme-light.weather-day {
+  background-image: url("./icons/light/heavy_rain.svg");
+}
+
+#custom-weather.weather-heavy_rain.weather-theme-light.weather-night {
+  background-image: url("./icons/light/heavy_rain.svg");
+}
+
+#custom-weather.weather-sleet_hail.weather-theme-light.weather-day {
+  background-image: url("./icons/light/sleet_hail.svg");
+}
+
+#custom-weather.weather-sleet_hail.weather-theme-light.weather-night {
+  background-image: url("./icons/light/sleet_hail.svg");
+}
+
+#custom-weather.weather-mixed_rain_hail_sleet.weather-theme-light.weather-day {
+  background-image: url("./icons/light/wintry_mix.svg");
+}
+
+#custom-weather.weather-mixed_rain_hail_sleet.weather-theme-light.weather-night {
+  background-image: url("./icons/light/wintry_mix.svg");
+}
+
+#custom-weather.weather-light_snow.weather-theme-light.weather-day {
+  background-image: url("./icons/light/flurries.svg");
+}
+
+#custom-weather.weather-light_snow.weather-theme-light.weather-night {
+  background-image: url("./icons/light/flurries.svg");
+}
+
+#custom-weather.weather-snow.weather-theme-light.weather-day {
+  background-image: url("./icons/light/flurries.svg");
+}
+
+#custom-weather.weather-snow.weather-theme-light.weather-night {
+  background-image: url("./icons/light/flurries.svg");
+}
+
+#custom-weather.weather-heavy_snow.weather-theme-light.weather-day {
+  background-image: url("./icons/light/heavy_snow.svg");
+}
+
+#custom-weather.weather-heavy_snow.weather-theme-light.weather-night {
+  background-image: url("./icons/light/heavy_snow.svg");
+}
+
+#custom-weather.weather-showers.weather-theme-light.weather-day {
+  background-image: url("./icons/light/heavy_rain.svg");
+}
+
+#custom-weather.weather-showers.weather-theme-light.weather-night {
+  background-image: url("./icons/light/heavy_rain.svg");
+}
+
+#custom-weather.weather-scattered_showers.weather-theme-light.weather-day {
+  background-image: url("./icons/light/heavy_rain.svg");
+}
+
+#custom-weather.weather-scattered_showers.weather-theme-light.weather-night {
+  background-image: url("./icons/light/heavy_rain.svg");
+}
+
+#custom-weather.weather-showers_snow.weather-theme-light.weather-day {
+  background-image: url("./icons/light/flurries.svg");
+}
+
+#custom-weather.weather-showers_snow.weather-theme-light.weather-night {
+  background-image: url("./icons/light/flurries.svg");
+}
+
+#custom-weather.weather-scattered_snow_showers.weather-theme-light.weather-day {
+  background-image: url("./icons/light/flurries.svg");
+}
+
+#custom-weather.weather-scattered_snow_showers.weather-theme-light.weather-night {
+  background-image: url("./icons/light/flurries.svg");
+}
+
+#custom-weather.weather-thunderstorms.weather-theme-light.weather-day {
+  background-image: url("./icons/light/strong_thunderstorms.svg");
+}
+
+#custom-weather.weather-thunderstorms.weather-theme-light.weather-night {
+  background-image: url("./icons/light/strong_thunderstorms.svg");
+}
+
+#custom-weather.weather-strong_thunderstorms.weather-theme-light.weather-day {
+  background-image: url("./icons/light/strong_thunderstorms.svg");
+}
+
+#custom-weather.weather-strong_thunderstorms.weather-theme-light.weather-night {
+  background-image: url("./icons/light/strong_thunderstorms.svg");
+}
+
+#custom-weather.weather-clear.weather-theme-dark.weather-day {
+  background-image: url("./icons/dark/sunny.svg");
+}
+
+#custom-weather.weather-clear.weather-theme-dark.weather-night {
+  background-image: url("./icons/dark/clear_night.svg");
+}
+
+#custom-weather.weather-mostly_clear.weather-theme-dark.weather-day {
+  background-image: url("./icons/dark/mostly_sunny.svg");
+}
+
+#custom-weather.weather-mostly_clear.weather-theme-dark.weather-night {
+  background-image: url("./icons/dark/mostly_clear_night.svg");
+}
+
+#custom-weather.weather-partly_cloudy.weather-theme-dark.weather-day {
+  background-image: url("./icons/dark/partly_cloudy.svg");
+}
+
+#custom-weather.weather-partly_cloudy.weather-theme-dark.weather-night {
+  background-image: url("./icons/dark/partly_cloudy_night.svg");
+}
+
+#custom-weather.weather-cloudy.weather-theme-dark.weather-day {
+  background-image: url("./icons/dark/cloudy.svg");
+}
+
+#custom-weather.weather-cloudy.weather-theme-dark.weather-night {
+  background-image: url("./icons/dark/cloudy.svg");
+}
+
+#custom-weather.weather-fog.weather-theme-dark.weather-day {
+  background-image: url("./icons/dark/cloudy.svg");
+}
+
+#custom-weather.weather-fog.weather-theme-dark.weather-night {
+  background-image: url("./icons/dark/cloudy.svg");
+}
+
+#custom-weather.weather-drizzle.weather-theme-dark.weather-day {
+  background-image: url("./icons/dark/drizzle.svg");
+}
+
+#custom-weather.weather-drizzle.weather-theme-dark.weather-night {
+  background-image: url("./icons/dark/drizzle.svg");
+}
+
+#custom-weather.weather-light_rain.weather-theme-dark.weather-day {
+  background-image: url("./icons/dark/drizzle.svg");
+}
+
+#custom-weather.weather-light_rain.weather-theme-dark.weather-night {
+  background-image: url("./icons/dark/drizzle.svg");
+}
+
+#custom-weather.weather-rain.weather-theme-dark.weather-day {
+  background-image: url("./icons/dark/heavy_rain.svg");
+}
+
+#custom-weather.weather-rain.weather-theme-dark.weather-night {
+  background-image: url("./icons/dark/heavy_rain.svg");
+}
+
+#custom-weather.weather-heavy_rain.weather-theme-dark.weather-day {
+  background-image: url("./icons/dark/heavy_rain.svg");
+}
+
+#custom-weather.weather-heavy_rain.weather-theme-dark.weather-night {
+  background-image: url("./icons/dark/heavy_rain.svg");
+}
+
+#custom-weather.weather-sleet_hail.weather-theme-dark.weather-day {
+  background-image: url("./icons/dark/sleet_hail.svg");
+}
+
+#custom-weather.weather-sleet_hail.weather-theme-dark.weather-night {
+  background-image: url("./icons/dark/sleet_hail.svg");
+}
+
+#custom-weather.weather-mixed_rain_hail_sleet.weather-theme-dark.weather-day {
+  background-image: url("./icons/dark/wintry_mix.svg");
+}
+
+#custom-weather.weather-mixed_rain_hail_sleet.weather-theme-dark.weather-night {
+  background-image: url("./icons/dark/wintry_mix.svg");
+}
+
+#custom-weather.weather-light_snow.weather-theme-dark.weather-day {
+  background-image: url("./icons/dark/flurries.svg");
+}
+
+#custom-weather.weather-light_snow.weather-theme-dark.weather-night {
+  background-image: url("./icons/dark/flurries.svg");
+}
+
+#custom-weather.weather-snow.weather-theme-dark.weather-day {
+  background-image: url("./icons/dark/flurries.svg");
+}
+
+#custom-weather.weather-snow.weather-theme-dark.weather-night {
+  background-image: url("./icons/dark/flurries.svg");
+}
+
+#custom-weather.weather-heavy_snow.weather-theme-dark.weather-day {
+  background-image: url("./icons/dark/heavy_snow.svg");
+}
+
+#custom-weather.weather-heavy_snow.weather-theme-dark.weather-night {
+  background-image: url("./icons/dark/heavy_snow.svg");
+}
+
+#custom-weather.weather-showers.weather-theme-dark.weather-day {
+  background-image: url("./icons/dark/heavy_rain.svg");
+}
+
+#custom-weather.weather-showers.weather-theme-dark.weather-night {
+  background-image: url("./icons/dark/heavy_rain.svg");
+}
+
+#custom-weather.weather-scattered_showers.weather-theme-dark.weather-day {
+  background-image: url("./icons/dark/heavy_rain.svg");
+}
+
+#custom-weather.weather-scattered_showers.weather-theme-dark.weather-night {
+  background-image: url("./icons/dark/heavy_rain.svg");
+}
+
+#custom-weather.weather-showers_snow.weather-theme-dark.weather-day {
+  background-image: url("./icons/dark/flurries.svg");
+}
+
+#custom-weather.weather-showers_snow.weather-theme-dark.weather-night {
+  background-image: url("./icons/dark/flurries.svg");
+}
+
+#custom-weather.weather-scattered_snow_showers.weather-theme-dark.weather-day {
+  background-image: url("./icons/dark/flurries.svg");
+}
+
+#custom-weather.weather-scattered_snow_showers.weather-theme-dark.weather-night {
+  background-image: url("./icons/dark/flurries.svg");
+}
+
+#custom-weather.weather-thunderstorms.weather-theme-dark.weather-day {
+  background-image: url("./icons/dark/strong_thunderstorms.svg");
+}
+
+#custom-weather.weather-thunderstorms.weather-theme-dark.weather-night {
+  background-image: url("./icons/dark/strong_thunderstorms.svg");
+}
+
+#custom-weather.weather-strong_thunderstorms.weather-theme-dark.weather-day {
+  background-image: url("./icons/dark/strong_thunderstorms.svg");
+}
+
+#custom-weather.weather-strong_thunderstorms.weather-theme-dark.weather-night {
+  background-image: url("./icons/dark/strong_thunderstorms.svg");
+}
