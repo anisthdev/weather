@@ -114,7 +114,7 @@ fn run() -> Result<(), String> {
     let weather = if let Some(input_file) = &config.input_file {
         if config.verbose {
             eprintln!(
-                "waybar-weather: using input file {}; location lookup skipped",
+                "weather: using input file {}; location lookup skipped",
                 input_file.display()
             );
         }
@@ -124,7 +124,7 @@ fn run() -> Result<(), String> {
         let (latitude, longitude, label, source) = resolve_location(&config)?;
         if config.verbose {
             eprintln!(
-                "waybar-weather: location source={} latitude={latitude:.4} longitude={longitude:.4}",
+                "weather: location source={} latitude={latitude:.4} longitude={longitude:.4}",
                 source.as_str()
             );
         }
@@ -531,7 +531,7 @@ fn reverse_geocode_label(latitude: f64, longitude: f64) -> Option<String> {
             "--max-time",
             "15",
             "-A",
-            "waybar-weather/0.1",
+            "weather/0.1",
             &url,
         ])
         .output()
@@ -666,7 +666,7 @@ fn run_forecast(config: &Config) -> Result<(), String> {
     let (latitude, longitude, label, source) = resolve_location(config)?;
     if config.verbose {
         eprintln!(
-            "waybar-weather: location source={} latitude={latitude:.4} longitude={longitude:.4}",
+            "weather: location source={} latitude={latitude:.4} longitude={longitude:.4}",
             source.as_str()
         );
     }

@@ -1,24 +1,29 @@
-# Waybar Weather Module
+# weather
 
-Custom Waybar weather module implemented as a small Rust binary.
+Weather from Open-Meteo as JSON, from a small Rust binary: a Waybar module
+by default, and with `--forecast` everything a weather card needs (the
+current conditions, the next hours and days, air quality) in one document,
+as quickbar's weather card reads it.
 
 ## Files
 
-- `src/main.rs`: module runtime that emits Waybar JSON.
+- `src/main.rs`: the binary.
 - `icons/`: static icon assets (`icons/light/*.svg`, `icons/dark/*.svg`).
-- `waybar-weather.css`: static class-to-icon mapping.
+- `waybar-weather.css`: static class-to-icon mapping, for Waybar.
 - `examples/open-meteo-current.json`: fixture for offline testing.
 
-## Build
+## Build and install
 
 ```bash
-cargo build --release
+makepkg -si            # installs /usr/bin/weather
+cargo build --release  # or just build: ./target/release/weather
 ```
 
-Binary path:
+## Use
 
 ```bash
-./target/release/waybar-weather
+weather                # Waybar's custom module JSON (text, tooltip, class)
+weather --forecast     # the weather card's JSON
 ```
 
 ## Waybar Setup
@@ -28,18 +33,15 @@ Waybar `config.jsonc`:
 ```json
 "custom/weather": {
   "return-type": "json",
-  "exec": "/home/asif/.config/waybar/weather-module/waybar-weather",
+  "exec": "weather",
   "interval": 900,
   "format": "{}",
   "tooltip": true
 }
 ```
 
-Waybar `style.css`:
-
-```css
-@import url("/home/asif/.config/waybar/weather-module/waybar-weather.css");
-```
+Waybar `style.css` imports `waybar-weather.css` (with the icons beside it)
+for the class-to-icon mapping.
 
 ## Supported Configuration
 

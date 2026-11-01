@@ -1,2 +1,7 @@
 /target/
 /.codex
+# makepkg
+/src/
+/pkg/
+/weather/
+*.pkg.tar.zst
