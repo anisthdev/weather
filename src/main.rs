@@ -5,6 +5,8 @@ use std::env;
 use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
+use std::time::Duration;
+use dbus::blocking::{stdintf::org_freedesktop_dbus::Properties, Connection as DbusConnection};
 
 #[derive(Debug, Clone)]
 struct Config {
@@ -19,6 +21,7 @@ struct Config {
     location_label: String,
     api_base: String,
     input_file: Option<PathBuf>,
+    forecast: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -63,6 +66,24 @@ struct IpLocation {
     success: Option<bool>,
 }
 
+#[derive(Debug, Deserialize)]
+struct ReverseGeocodeResponse {
+    display_name: Option<String>,
+    name: Option<String>,
+    address: Option<ReverseGeocodeAddress>,
+}
+
+#[derive(Debug, Deserialize)]
+struct ReverseGeocodeAddress {
+    city: Option<String>,
+    town: Option<String>,
+    village: Option<String>,
+    municipality: Option<String>,
+    county: Option<String>,
+    state: Option<String>,
+    country: Option<String>,
+}
+
 #[derive(Debug, Clone, Copy)]
 enum LocationSource {
     ExplicitCoordinates,
@@ -85,6 +106,9 @@ fn main() {
 
 fn run() -> Result<(), String> {
     let config = Config::from_env_and_args()?;
+    if config.forecast {
+        return run_forecast(&config);
+    }
 
     let mut detected_label = None;
     let weather = if let Some(input_file) = &config.input_file {
@@ -224,6 +248,10 @@ impl Config {
                 .unwrap_or_else(|| "https://api.open-meteo.com/v1/forecast".to_string()),
             input_file: get_setting(&args, "input_file", "WAYBAR_WEATHER_INPUT_FILE")
                 .map(PathBuf::from),
+            forecast: get_setting(&args, "forecast", "WAYBAR_WEATHER_FORECAST")
+                .as_deref()
+                .map(parse_bool)
+                .unwrap_or(false),
         })
     }
 }
@@ -380,118 +408,98 @@ fn resolve_location(config: &Config) -> Result<(f64, f64, Option<String>, Locati
 }
 
 fn geoclue_location() -> Option<(f64, f64, Option<String>)> {
-    let create = Command::new("gdbus")
-        .args([
-            "call",
-            "--system",
-            "--dest",
-            "org.freedesktop.GeoClue2",
-            "--object-path",
-            "/org/freedesktop/GeoClue2/Manager",
-            "--method",
-            "org.freedesktop.GeoClue2.Manager.GetClient",
-        ])
-        .output()
-        .ok()?;
+    let connection = match DbusConnection::new_system() {
+        Ok(connection) => connection,
+        Err(error) => {
+            eprintln!("geoclue_location: failed to open system bus: {error}");
+            return None;
+        }
+    };
 
-    let stdout = String::from_utf8(create.stdout).ok()?;
-    let client_path = extract_dbus_path(&stdout)?;
+    let timeout = Duration::from_secs(5);
+    let manager = connection.with_proxy(
+        "org.freedesktop.GeoClue2",
+        "/org/freedesktop/GeoClue2/Manager",
+        timeout,
+    );
 
-    let _ = Command::new("gdbus")
-        .args([
-            "call",
-            "--system",
-            "--dest",
-            "org.freedesktop.GeoClue2",
-            "--object-path",
-            &client_path,
-            "--method",
-            "org.freedesktop.DBus.Properties.Set",
-            "org.freedesktop.GeoClue2.Client",
-            "DesktopId",
-            "<'waybar-weather'>",
-        ])
-        .output()
-        .ok()?;
+    let client_path: dbus::Path<'static> = match manager.method_call(
+        "org.freedesktop.GeoClue2.Manager",
+        "GetClient",
+        (),
+    ) {
+        Ok((client_path,)) => client_path,
+        Err(error) => {
+            eprintln!("geoclue_location: GetClient failed: {error}");
+            return None;
+        }
+    };
 
-    let _ = Command::new("gdbus")
-        .args([
-            "call",
-            "--system",
-            "--dest",
-            "org.freedesktop.GeoClue2",
-            "--object-path",
-            &client_path,
-            "--method",
-            "org.freedesktop.DBus.Properties.Set",
-            "org.freedesktop.GeoClue2.Client",
-            "RequestedAccuracyLevel",
-            "<uint32 4>",
-        ])
-        .output()
-        .ok()?;
+    let client = connection.with_proxy("org.freedesktop.GeoClue2", client_path, timeout);
 
-    let start = Command::new("gdbus")
-        .args([
-            "call",
-            "--system",
-            "--dest",
-            "org.freedesktop.GeoClue2",
-            "--object-path",
-            &client_path,
-            "--method",
-            "org.freedesktop.GeoClue2.Client.Start",
-        ])
-        .output()
-        .ok()?;
-
-    if !start.status.success() {
+    if let Err(error) = client.set(
+        "org.freedesktop.GeoClue2.Client",
+        "DesktopId",
+        "waybar-weather".to_string(),
+    ) {
+        eprintln!("geoclue_location: failed to set DesktopId: {error}");
         return None;
     }
 
-    let props = Command::new("gdbus")
-        .args([
-            "call",
-            "--system",
-            "--dest",
-            "org.freedesktop.GeoClue2",
-            "--object-path",
-            &client_path,
-            "--method",
-            "org.freedesktop.DBus.Properties.Get",
-            "org.freedesktop.GeoClue2.Client",
-            "Location",
-        ])
-        .output()
-        .ok()?;
+    if let Err(error) = client.set(
+        "org.freedesktop.GeoClue2.Client",
+        "RequestedAccuracyLevel",
+        4u32,
+    ) {
+        eprintln!("geoclue_location: failed to set RequestedAccuracyLevel: {error}");
+        return None;
+    }
 
-    let props_stdout = String::from_utf8(props.stdout).ok()?;
-    let location_path = extract_dbus_path(&props_stdout)?;
+    let start_result: Result<(), dbus::Error> =
+        client.method_call("org.freedesktop.GeoClue2.Client", "Start", ());
+    if let Err(error) = start_result {
+        eprintln!("geoclue_location: Start failed: {error}");
+        return None;
+    }
 
-    let location = Command::new("gdbus")
-        .args([
-            "call",
-            "--system",
-            "--dest",
-            "org.freedesktop.GeoClue2",
-            "--object-path",
-            &location_path,
-            "--method",
-            "org.freedesktop.DBus.Properties.GetAll",
-            "org.freedesktop.GeoClue2.Location",
-        ])
-        .output()
-        .ok()?;
+    let location_path: dbus::Path<'static> = match client.get("org.freedesktop.GeoClue2.Client", "Location") {
+        Ok(location_path) => location_path,
+        Err(error) => {
+            eprintln!("geoclue_location: failed to read Location property: {error}");
+            return None;
+        }
+    };
 
-    let location_stdout = String::from_utf8(location.stdout).ok()?;
-    let latitude = extract_dbus_number(&location_stdout, "Latitude")?;
-    let longitude = extract_dbus_number(&location_stdout, "Longitude")?;
-    Some((latitude, longitude, None))
+    let location = connection.with_proxy("org.freedesktop.GeoClue2", location_path, timeout);
+
+    let latitude: f64 = match location.get("org.freedesktop.GeoClue2.Location", "Latitude") {
+        Ok(latitude) => latitude,
+        Err(error) => {
+            eprintln!("geoclue_location: failed to read Latitude: {error}");
+            return None;
+        }
+    };
+    let longitude: f64 = match location.get("org.freedesktop.GeoClue2.Location", "Longitude") {
+        Ok(longitude) => longitude,
+        Err(error) => {
+            eprintln!("geoclue_location: failed to read Longitude: {error}");
+            return None;
+        }
+    };
+    let description: Option<String> = match location.get::<String>("org.freedesktop.GeoClue2.Location", "Description") {
+        Ok(description) if !description.trim().is_empty() => Some(description),
+        Ok(_) => None,
+        Err(_) => {
+            None
+        }
+    };
+    let label = reverse_geocode_label(latitude, longitude).or(description);
+    Some((latitude, longitude, label))
 }
 
 fn ip_location() -> Option<(f64, f64, Option<String>)> {
     let output = Command::new("curl")
-        .args(["-fsSL", "https://ipwho.is/"])
+        .args(["-fsSL", "--connect-timeout", "5", "--max-time", "15", "https://ipwho.is/"])
         .output()
         .ok()?;
 
@@ -511,22 +519,47 @@ fn ip_location() -> Option<(f64, f64, Option<String>)> {
     ))
 }
 
-fn extract_dbus_path(value: &str) -> Option<String> {
-    let start = value.find("objectpath '")? + "objectpath '".len();
-    let end = value[start..].find('\'')? + start;
-    Some(value[start..end].to_string())
-}
+fn reverse_geocode_label(latitude: f64, longitude: f64) -> Option<String> {
+    let url = format!(
+        "https://nominatim.openstreetmap.org/reverse?lat={latitude}&lon={longitude}&format=jsonv2&zoom=10&addressdetails=1"
+    );
+    let output = Command::new("curl")
+        .args([
+            "-fsSL",
+            "--connect-timeout",
+            "5",
+            "--max-time",
+            "15",
+            "-A",
+            "waybar-weather/0.1",
+            &url,
+        ])
+        .output()
+        .ok()?;
 
-fn extract_dbus_number(value: &str, key: &str) -> Option<f64> {
-    let marker = format!("'{}': <", key);
-    let start = value.find(&marker)? + marker.len();
-    let end = value[start..].find('>')? + start;
-    let raw = value[start..end].trim();
-    let number = raw
-        .trim_start_matches("double ")
-        .trim_start_matches("uint32 ")
-        .trim();
-    number.parse::<f64>().ok()
+    if !output.status.success() {
+        return None;
+    }
+
+    let parsed: ReverseGeocodeResponse = serde_json::from_slice(&output.stdout).ok()?;
+    let ReverseGeocodeResponse {
+        display_name,
+        name,
+        address,
+    } = parsed;
+    let address = address?;
+    let label = address
+        .city
+        .or(address.town)
+        .or(address.village)
+        .or(address.municipality)
+        .or(address.county)
+        .or(address.state)
+        .or(address.country)
+        .or(name)
+        .or(display_name)?;
+    let label = label.trim().to_string();
+    if label.is_empty() { None } else { Some(label) }
 }
 
 fn fetch_weather(
@@ -542,7 +575,7 @@ fn fetch_weather(
     );
 
     let output = Command::new("curl")
-        .args(["-fsSL", &url])
+        .args(["-fsSL", "--connect-timeout", "5", "--max-time", "15", &url])
         .output()
         .map_err(|err| err.to_string())?;
 
@@ -623,4 +656,142 @@ fn format_wind(value: f64, units: WindUnits) -> String {
         WindUnits::Kn => format!("{rounded} kn"),
         WindUnits::Kmh => format!("{rounded} km/h"),
     }
+}
+
+/// `--forecast`: everything a weather card needs, as one JSON document:
+/// location, current conditions and details, today's sun times, the next
+/// 24 hours and the next 7 days. Each entry carries its condition label and
+/// icon file name, as the bar output does through its CSS classes.
+fn run_forecast(config: &Config) -> Result<(), String> {
+    let (latitude, longitude, label, source) = resolve_location(config)?;
+    if config.verbose {
+        eprintln!(
+            "waybar-weather: location source={} latitude={latitude:.4} longitude={longitude:.4}",
+            source.as_str()
+        );
+    }
+
+    let url = format!(
+        "{}?latitude={latitude}&longitude={longitude}\
+         &current=temperature_2m,apparent_temperature,weather_code,is_day,wind_speed_10m,wind_direction_10m,relative_humidity_2m,pressure_msl,precipitation\
+         &hourly=temperature_2m,weather_code,is_day,precipitation_probability,uv_index,visibility\
+         &daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_probability_max,uv_index_max\
+         &forecast_hours=26&forecast_days=7&timezone=auto&temperature_unit={}&wind_speed_unit={}",
+        config.api_base,
+        config.units.as_api_value(),
+        config.wind_units.as_api_value()
+    );
+    let data = curl_json(&url).ok_or("Weather API request failed.")?;
+
+    let current = &data["current"];
+    let hourly = &data["hourly"];
+    let daily = &data["daily"];
+    let num = |value: &serde_json::Value| value.as_f64();
+    let condition = |code: &serde_json::Value, is_day: bool| {
+        let key = map_weather_code(code.as_i64().unwrap_or(3) as i32);
+        (key, condition_label(key), icon_filename(key, is_day).unwrap_or("cloudy.svg"))
+    };
+
+    let is_day = current["is_day"].as_i64() == Some(1);
+    let (key, label_text, icon) = condition(&current["weather_code"], is_day);
+
+    // Open-Meteo's hourly list can start an hour or two back; begin at the
+    // current hour ("2026-10-20T03:15" -> "2026-10-20T03:00")
+    let this_hour = current["time"]
+        .as_str()
+        .and_then(|t| t.get(..13))
+        .map(|h| format!("{h}:00"))
+        .unwrap_or_default();
+    let first = (0..hourly["time"].as_array().map_or(0, Vec::len))
+        .find(|&i| hourly["time"][i].as_str().is_some_and(|t| t >= this_hour.as_str()))
+        .unwrap_or(0);
+
+    let hours: Vec<serde_json::Value> = (first..hourly["time"].as_array().map_or(0, Vec::len))
+        .take(24)
+        .map(|i| {
+            let (key, label, icon) = condition(&hourly["weather_code"][i], hourly["is_day"][i].as_i64() == Some(1));
+            json!({
+                "time": hourly["time"][i],
+                "temperature": num(&hourly["temperature_2m"][i]),
+                "condition": key,
+                "label": label,
+                "icon": icon,
+                "precipitation_chance": num(&hourly["precipitation_probability"][i]),
+            })
+        })
+        .collect();
+
+    let days: Vec<serde_json::Value> = (0..daily["time"].as_array().map_or(0, Vec::len))
+        .map(|i| {
+            let (key, label, icon) = condition(&daily["weather_code"][i], true);
+            json!({
+                "date": daily["time"][i],
+                "high": num(&daily["temperature_2m_max"][i]),
+                "low": num(&daily["temperature_2m_min"][i]),
+                "condition": key,
+                "label": label,
+                "icon": icon,
+                "precipitation_chance": num(&daily["precipitation_probability_max"][i]),
+                "uv_index_max": num(&daily["uv_index_max"][i]),
+            })
+        })
+        .collect();
+
+    // Air quality comes from a separate API; leave it out if that fails
+    let aqi = curl_json(&format!(
+        "https://air-quality-api.open-meteo.com/v1/air-quality?latitude={latitude}&longitude={longitude}&current=us_aqi"
+    ))
+    .and_then(|aq| aq["current"]["us_aqi"].as_f64());
+
+    let location = if !config.location_label.is_empty() {
+        config.location_label.clone()
+    } else {
+        label.unwrap_or_default()
+    };
+
+    let output = json!({
+        "location": location,
+        "location_source": source.as_str(),
+        "units": {
+            "temperature": format!("°{}", config.units.suffix()),
+            "wind": format_wind(0.0, config.wind_units).trim_start_matches('0').trim().to_string(),
+        },
+        "current": {
+            "time": current["time"],
+            "temperature": num(&current["temperature_2m"]),
+            "feels_like": num(&current["apparent_temperature"]),
+            "condition": key,
+            "label": label_text,
+            "icon": icon,
+            "is_day": is_day,
+            "humidity": num(&current["relative_humidity_2m"]),
+            "wind_speed": num(&current["wind_speed_10m"]),
+            "wind_direction": num(&current["wind_direction_10m"]),
+            "pressure": num(&current["pressure_msl"]),
+            "precipitation": num(&current["precipitation"]),
+            "uv_index": num(&hourly["uv_index"][first]),
+            "visibility_km": num(&hourly["visibility"][first]).map(|m| m / 1000.0),
+            "aqi": aqi,
+        },
+        "today": {
+            "high": num(&daily["temperature_2m_max"][0]),
+            "low": num(&daily["temperature_2m_min"][0]),
+            "sunrise": daily["sunrise"][0],
+            "sunset": daily["sunset"][0],
+            "precipitation_chance": num(&daily["precipitation_probability_max"][0]),
+        },
+        "hourly": hours,
+        "daily": days,
+    });
+
+    println!("{output}");
+    Ok(())
+}
+
+fn curl_json(url: &str) -> Option<serde_json::Value> {
+    let output = Command::new("curl").args(["-fsSL", "--connect-timeout", "5", "--max-time", "15", url]).output().ok()?;
+    if !output.status.success() {
+        return None;
+    }
+    serde_json::from_slice(&output.stdout).ok()
 }
